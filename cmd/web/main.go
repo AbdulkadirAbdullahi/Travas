@@ -2,17 +2,19 @@ package main
 
 import (
 	"context"
-	"github.com/alexedwards/scs/v2"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	"github.com/travas-io/travas/pkg/config"
-	"github.com/travas-io/travas/pkg/controller"
-	"github.com/travas-io/travas/pkg/db"
-	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/travas-io/travas/cmd/web/routes"
+	"github.com/travas-io/travas/pkg/config"
+	"github.com/travas-io/travas/pkg/controller"
+	"github.com/travas-io/travas/pkg/db"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var app config.TravasConfig
@@ -40,12 +42,15 @@ func main() {
 	app.InfoLogger = InfoLogger
 	app.Session = session
 
-	port := os.Getenv("PORT")
-	uri := os.Getenv("TRAVAS_DB_URI")
+	//hardcoding the credentials
+	//port := os.Getenv("PORT")
+	//uri := os.Getenv("TRAVAS_DB_URI")
+
+	Mongo_URL := "mongodb+srv://travas:211920@Travas.com@cluster0.yowd966.mongodb.net/test"
 
 	app.InfoLogger.Println("*---------- Connecting to the travas cloud database --------")
 
-	client := db.DatabaseConnection(uri)
+	client := db.DatabaseConnection(Mongo_URL)
 
 	// close database connection
 	defer func(client *mongo.Client, ctx context.Context) {
@@ -65,10 +70,11 @@ func main() {
 	}
 
 	handler := controller.NewTravasHandler(&app, client)
-	Routes(router, *handler)
+	routes.Routes(router, *handler)
 
 	app.InfoLogger.Println("*---------- Starting Travas Web Server -----------*")
-	err = router.Run(port)
+	//err = router.Run(port)
+	err = router.Run("localhost:8080")
 	if err != nil {
 		app.ErrorLogger.Fatalf("cannot start the server : %v", err)
 	}

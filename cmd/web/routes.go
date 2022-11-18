@@ -8,5 +8,6 @@ import (
 func Routes(r *gin.Engine, c controller.TravasHandler) {
 	router := r.Use(gin.Logger(), gin.Recovery())
 	router.GET("/", c.HomePage())
+	router.GET("/users", c.GetUsers())
 	return
 }

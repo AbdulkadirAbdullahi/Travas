@@ -2,11 +2,12 @@ package controller
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/travas-io/travas/pkg/config"
 	"github.com/travas-io/travas/query"
 	"github.com/travas-io/travas/query/repo"
-	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -32,5 +33,11 @@ func (tv *TravasHandler) HomePage() gin.HandlerFunc {
 			_ = ctx.AbortWithError(http.StatusInternalServerError, gin.Error{Err: err})
 		}
 
+	}
+}
+func (tv *TravasHandler) GetUsers() gin.HandlerFunc {
+	// we will get the list of users from db_collection using the db_query
+	return func(ctx *gin.Context) {
+		fmt.Println("Users list")
 	}
 }
