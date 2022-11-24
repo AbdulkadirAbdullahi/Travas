@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/go-playground/validator/v10"
 	"log"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type Tools struct {

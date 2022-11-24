@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+
 	"github.com/travas-io/travas/pkg/config"
 
 	"time"
@@ -24,9 +25,11 @@ func Connection(uri string) *mongo.Client {
 	}
 
 	err = client.Ping(ctx, nil)
-	if err != nil {
-		app.ErrorLogger.Fatalln(err)
-	}
+	/*
+		if err != nil {
+			app.ErrorLogger.Fatalln(err)
+		}
+	*/
 
 	return client
 }

@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"log"
+	"os"
+
+	"github.com/alexedwards/scs/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
@@ -12,12 +16,10 @@ import (
 	"github.com/travas-io/travas/pkg/config"
 	"github.com/travas-io/travas/pkg/controller"
 	"go.mongodb.org/mongo-driver/mongo"
-	"log"
-	"os"
 )
 
 var app config.Tools
-
+var session *scs.SessionManager
 var validate *validator.Validate
 
 func main() {
@@ -26,9 +28,6 @@ func main() {
 	gob.Register(model.Tour{})
 
 	err := godotenv.Load()
-	if err != nil {
-		app.ErrorLogger.Fatalf("cannot load up the env file : %v", err)
-	}
 
 	validate = validator.New()
 	ErrorLogger := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
@@ -43,7 +42,7 @@ func main() {
 	fmt.Println(port, uri)
 	app.InfoLogger.Println("*---------- Connecting to the travas cloud database --------")
 
-	client := db.Connection(uri)
+	client := db.Connection("mongodb+srv://travasllc:_travasllc2022_@cluster0.tii3sbz.mongodb.net/test")
 
 	// close database connection
 	defer func(client *mongo.Client, ctx context.Context) {
