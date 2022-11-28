@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/travas-io/travas/model"
@@ -12,35 +13,18 @@ import (
 
 // database queries is done in this file
 
-func (td *TravasDB) InsertUser(user model.Tourist, tours []model.Tour) (int, primitive.ObjectID, error) {
+func (td *TravasDB) InsertUser(user model.Tourist) (int, primitive.ObjectID, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
-	var id primitive.ObjectID
-
 	filter := bson.D{{Key: "email", Value: user.Email}}
 
-	var res bson.M
+	var res interface{}
 	err := TouristData(td.DB, "tourist").FindOne(ctx, filter).Decode(&res)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			user.ID = primitive.NewObjectID()
-			doc := bson.D{
-				{Key: "_id", Value: user.ID},
-				{Key: "email", Value: user.Email},
-				{Key: "first_name", Value: user.FirstName},
-				{Key: "last_name", Value: user.LastName},
-				{Key: "phone", Value: user.Phone},
-				{Key: "password", Value: user.Password},
-				{Key: "check_password", Value: user.CheckPassword},
-				{Key: "tours_list", Value: tours},
-				{Key: "created_at", Value: user.CreatedAt},
-				{Key: "updated_at", Value: user.UpdatedAt},
-				{Key: "geo_location", Value: ""},
-				{Key: "token", Value: ""},
-				{Key: "new_token", Value: ""},
-			}
-			_, insertErr := TouristData(td.DB, "tourist").InsertOne(ctx, doc)
+			_, insertErr := TouristData(td.DB, "tourist").InsertOne(ctx, user)
 			if insertErr != nil {
 				td.App.ErrorLogger.Fatalf("cannot add user to the database : %v ", insertErr)
 			}
@@ -49,14 +33,8 @@ func (td *TravasDB) InsertUser(user model.Tourist, tours []model.Tour) (int, pri
 		td.App.ErrorLogger.Fatal(err)
 	}
 
-	for k, v := range res {
-		if k == "_id" {
-			switch userID := v.(type) {
-			case primitive.ObjectID:
-				id = userID
-			}
-		}
-	}
+	id := res.(primitive.ObjectID)
+
 	return 1, id, err
 }
 
@@ -75,7 +53,7 @@ func (td *TravasDB) CheckForUser(userID primitive.ObjectID) (bool, error) {
 		}
 		td.App.ErrorLogger.Fatalf("cannot execute the database query perfectly : %v ", err)
 	}
-	// td.App.InfoLogger.Printf("found document %v", result)
+
 	return true, nil
 }
 
@@ -83,7 +61,6 @@ func (td *TravasDB) UpdateInfo(userID primitive.ObjectID, tk map[string]string) 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
-	// opt := options.Update().SetUpsert(true)
 	filter := bson.D{{Key: "_id", Value: userID}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "token", Value: tk["t1"]}, {Key: "new_token", Value: tk["t2"]}}}}
 
@@ -92,4 +69,33 @@ func (td *TravasDB) UpdateInfo(userID primitive.ObjectID, tk map[string]string) 
 		return false, err
 	}
 	return true, nil
+}
+
+func (td *TravasDB) LoadPackage(res []model.Operator) ([]model.Operator, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	cursor, err := OperatorData(td.DB, "operator").Find(ctx, bson.D{{}})
+	if err != nil {
+		return res, fmt.Errorf("cannot find document in the database %v ", err)
+	}
+
+	if err = cursor.All(ctx, &res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (td *TravasDB) AddTourPackage(userID primitive.ObjectID, tour model.Tour) (bool, error){
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: userID}}
+	update := bson.D{{Key: "$push", Value: bson.D{{Key: "tour_list", Value: tour}}}}
+
+	_, err:= TouristData(td.DB, "tourist").UpdateOne(ctx, filter, update)
+	if err != nil{
+		return false, fmt.Errorf("cannot update document : %v ", err)
+	}
+	return  true, nil
 }
